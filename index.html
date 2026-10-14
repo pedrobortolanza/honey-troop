@@ -9556,9 +9556,10 @@ const MODES = {
 // Partida em atos: cada ato termina com um chefe; vencer leva ao próximo ato com tudo o que foi construído
 const ACTS = [
   { n: 'Ato I', boss: 'General Vespa', disp: ['fogo', 'metal'], dur: 720, hp: 1700, atk: 52, reward: { gold: 4000, gems: 15, xp: 300 }, pts: 4000, hab: 4, farm: 6, lg: 3 },
-  { n: 'Ato II', boss: 'Vespa Rainha', disp: ['trevas', 'fogo'], dur: 720, hp: 4600, atk: 92, reward: { gold: 12000, gems: 20, xp: 600 }, pts: 8000, hab: 7, farm: 9, lg: 6 },
-  { n: 'Ato III', boss: 'Imperatriz do Ninho', disp: ['trevas', 'luz'], dur: 720, hp: 7000, atk: 112, pts: 12000, hab: 9, farm: 12, lg: 8 },
+  { n: 'Ato II', boss: 'Vespa Rainha', disp: ['trevas', 'fogo'], dur: 720, hp: 2900, atk: 78, reward: { gold: 12000, gems: 20, xp: 600 }, pts: 8000, hab: 7, farm: 9, lg: 6 },
+  { n: 'Ato III', boss: 'Imperatriz do Ninho', disp: ['trevas', 'luz'], dur: 720, hp: 4200, atk: 100, pts: 12000, hab: 9, farm: 12, lg: 8 },
 ];
+const BOSS_TK = { asc: 0.12, move: 0.08 };
 const actEndAt = i => ACTS.slice(0, i + 1).reduce((a, x) => a + x.dur, 0);
 const isActs = () => !!(S && S.mode === 'atos');
 const curAct = () => ACTS[Math.min(S.act || 0, ACTS.length - 1)];
@@ -10648,8 +10649,9 @@ function bossTeam(final) {
     else if (S.weakened) hp = Math.round(hp * 0.7);
     if (final && S.necroBoss && S.act === 2) hp = Math.round(hp * S.necroBoss);
     // v8.2: o chefe não olha mais para as abelhas fora da luta (o powerK geral saiu daqui), só para o time abaixo
-    // v8.1: o chefe cresce com o time que entra na luta: +40% de vida por abelha ascendida, +20% por ataque comprado, +10% por mutação do Laboratório
-    const tk = 1 + teamDragons().reduce((a, d) => a + (d.asc ? 0.4 : 0) + (d.move && ATTACKS[d.move] ? 0.2 : 0) + (d.mut && MUTS[d.mut] && MUTS[d.mut].lab ? 0.1 : 0), 0);
+    // v8.9: o chefe cresce pouco com o time que entra na luta (+12% de vida por abelha ascendida, +8% por ataque comprado;
+    // mutação não conta). Antes era +40/+20/+10% e um time todo melhorado ficava mais fraco que um time comum.
+    const tk = 1 + teamDragons().reduce((a, d) => a + (d.asc ? BOSS_TK.asc : 0) + (d.move && ATTACKS[d.move] ? BOSS_TK.move : 0), 0);
     hp = Math.round(hp * tk); atk = Math.round(atk * (1 + (tk - 1) * 0.35));
     return [{ name: final ? A.boss : A.boss + ' no ninho', els: [], disp: A.disp, rar: 'L', lvl: 99, hpMax: hp, hp, atk, cd: 0, boss: true }];
   }
