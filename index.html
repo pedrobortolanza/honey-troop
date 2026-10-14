@@ -11836,6 +11836,29 @@ const TABS = [
 ];
 const TAB_TITLE = Object.fromEntries(TABS.map(t => [t[0], t[2]]));
 let lastTop = '', lastTabs = '', lastView = '', lastMap = '', lastHud = '', mapCentered = false;
+let mapAt = 0, sheetClosing = false;
+// v9.1: a aba fecha deslizando para baixo (antes sumia de uma vez) e o conteúdo entra suave ao trocar de aba.
+// Devolve false enquanto a aba está saindo: o render espera a animação acabar.
+function sheetSwap(view) {
+  const old = $('#sheet .sheet'), back = $('#sheet .sheet-back');
+  if (!view) {
+    if (!old || !old.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return true;
+    if (sheetClosing) return false;
+    sheetClosing = true;
+    old.style.pointerEvents = 'none'; if (back) { back.style.pointerEvents = 'none'; back.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 170, fill: 'forwards' }); }
+    const fim = () => {
+      if (!sheetClosing) return;
+      sheetClosing = false;
+      if (S && S.tab === 'ilha') { morph($('#sheet'), ''); lastView = ''; }
+    };
+    old.animate([{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: '0 22px' }], { duration: 170, easing: 'ease-in', fill: 'forwards' }).onfinish = fim;
+    setTimeout(fim, 320); // garantia: se o navegador não desenhar quadros (aba em segundo plano), fecha mesmo assim
+    return false;
+  }
+  if (sheetClosing) { sheetClosing = false; [old, back].forEach(el => el && el.getAnimations().forEach(a => a.cancel())); }
+  if (old && old.dataset.tab !== S.tab) requestAnimationFrame(() => { const b = $('#sheet .sheet-body'); if (b && b.animate) b.animate([{ opacity: 0, translate: '0 8px' }, { opacity: 1, translate: '0 0' }], { duration: 180, easing: 'ease-out' }); });
+  return true;
+}
 function render(force) {
   if (!S) return;
   if (force) { lastTop = lastTabs = lastView = lastMap = lastHud = ''; }
@@ -11843,7 +11866,10 @@ function render(force) {
   if (top !== lastTop) { morph($('#top'), top); lastTop = top; }
   const tabs = renderTabs();
   if (tabs !== lastTabs) { morph($('#tabs'), tabs); lastTabs = tabs; }
-  const map = viewMap();
+  // v9.1: com uma aba aberta por cima, a ilha só é remontada a cada 2 s (antes era a cada quarto de segundo)
+  const mapDue = force || S.tab === 'ilha' || !lastMap || performance.now() - mapAt > 2000;
+  const map = mapDue ? viewMap() : lastMap;
+  if (mapDue) mapAt = performance.now();
   if (map !== lastMap) {
     morph($('#map'), map); lastMap = map; startFlights();
     if (!W3) map3dInit();
@@ -11854,7 +11880,7 @@ function render(force) {
   const view = S.tab === 'ilha' ? '' : `<div class="sheet-back" data-a="tab" data-k="ilha"></div><section class="sheet" role="dialog" aria-label="${TAB_TITLE[S.tab]}" data-tab="${S.tab}" data-lg="${arenaLg()}">
     <header><h2><span class="hic">${TABS.find(t => t[0] === S.tab)[1]}</span>${TAB_TITLE[S.tab]}</h2><button class="btn xbtn" data-a="tab" data-k="ilha" aria-label="Fechar" title="Fechar">✕</button></header>
     <div class="sheet-body">${tabTip()}${renderView()}</div></section>`;
-  if (view !== lastView) {
+  if (view !== lastView && sheetSwap(view)) {
     morph($('#sheet'), view); lastView = view;
     if (S.tab === 'stats') drawChart();
     animReel();
