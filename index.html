@@ -8477,7 +8477,9 @@ const M3 = (() => {
     if (P.flame) P.flame.scale.setScalar(1 + 0.12 * Math.sin(t * Math.PI * 8));
   }
   // Câmera fixa para todas as abelhas (mesma escala em todo o jogo)
-  const FW = 240, FH = 200, NF = 8;
+  // v9.1: no celular os quadros são menores (180x150): cada tira ocupa pouco mais da metade da memória
+  const LOWMEM = matchMedia('(pointer: coarse)').matches;
+  const FW = LOWMEM ? 180 : 240, FH = LOWMEM ? 150 : 200, NF = 8;
   const dcam = new T.OrthographicCamera(-3.1, 3.1, 2.58, -2.58, 0.1, 50);
   dcam.position.set(1.5, 3.4, 7.5); dcam.lookAt(0, 1.85, 0);
   const dScene = new T.Scene(); lights(dScene, 'dragon');
@@ -9475,20 +9477,13 @@ const M3 = (() => {
     }
     return { setLots, frame, setSize };
   }
-  const isoCache = new Map();
   return {
     world,
     FW, FH, NF,
     load, get ready() { return glbReady; },
     dragonStrip,
-    iso(key, ...args) {
-      const k = key + args.join(',');
-      if (!isoCache.has(k)) {
-        const r = isoRender(B[key](...args));
-        isoCache.set(k, r);
-      }
-      return isoCache.get(k);
-    },
+    // v9.1: sem cache aqui; a imagem pronta fica no SPR do jogo e a tela de desenho é liberada
+    iso(key, ...args) { return isoRender(B[key](...args)); },
   };
 })();
 /* MODELS-END */
@@ -11751,6 +11746,7 @@ function pumpSprites() {
       const svg = el.querySelector('svg.dg');
       if (svg) svg.outerHTML = dragonSVG(m[1].split('+'), m[2], +el.dataset.seed || 0, m[3] !== undefined ? { hat: m[3] || null, wing: m[4] || null } : undefined);
     });
+    if (r.canvas !== undefined && job.key.startsWith('i:')) r.canvas.width = r.canvas.height = 0; // libera a tela de desenho
     sprBusy = false;
     setTimeout(pumpSprites, 20);
   });
@@ -11773,9 +11769,15 @@ function bossStrip(els) {
 }
 const DECO_KINDS = ['moita', 'ponte', 'morro', 'tufo', 'tufo2', 'gotas', 'potmel', 'vela', 'polen', 'polen2', 'favo', 'flores', 'girassol', 'skep', 'lanterna', 'fonte', 'arbusto', 'carga', 'pedras'];
 const isoKeys = () => ['arena', 'cruzar', 'loja', 'missoes', 'farm', 'roleta', ...Object.keys(HAB_THEME).map(t => 'habitat:' + t), ...DECO_KINDS.map(k => 'deco:' + k)];
+// v9.1: as construções em imagem só servem para o mapa sem 3D; só são feitas quando a ilha 3D não abre
+function warmIso() {
+  if (sprOff || warmIso.done) return;
+  warmIso.done = true;
+  isoKeys().forEach(k => { const [n, a] = k.split(':'); sprJob('i:' + k, () => a === undefined ? M3.iso(n) : M3.iso(n, n === 'tree' ? +a : a)); });
+}
 function warmSprites() {
   if (sprOff) return;
-  isoKeys().forEach(k => { const [n, a] = k.split(':'); sprJob('i:' + k, () => a === undefined ? M3.iso(n) : M3.iso(n, n === 'tree' ? +a : a)); });
+  if (window.__no3d) warmIso();
   ALL_SPECIES.forEach(sp => { const k = 'd:' + sp.els.join('+') + sp.rar; sprJob(k, () => ({ canvas: M3.dragonStrip(sp.els, sp.rar) })); });
 }
 // Imagem de um modelo isométrico ancorada no ponto (X, Y) do mapa; null se ainda não estiver pronta
@@ -11807,7 +11809,8 @@ function placeholderSVG(rar) {
 }
 // Tela de carregamento: espera os modelos da ilha e os dragões da tela inicial antes de mostrar o jogo
 function loadingThen(done) {
-  const need = ['d:fogoR', 'd:luz+trevasL', 'd:agua+plantaE', ...isoKeys().map(k => 'i:' + k)];
+  // v9.1: as construções em imagem só existem sem a ilha 3D; a tela de carregamento espera só as abelhas da tela inicial
+  const need = ['d:fogoR', 'd:luz+trevasL', 'd:agua+plantaE', ...(window.__no3d ? isoKeys().map(k => 'i:' + k) : [])];
   const t0 = performance.now();
   overlay(`<div class="loading"><h1>Honey Troop</h1><p>Acordando o enxame…</p><div class="bar gold"><i id="ldbar" style="width:0%"></i></div></div>`);
   ['fogo', 'luz+trevas', 'agua+planta'].forEach((e, i) => dragonSprite(e.split('+'), 'RLE'[i]));
@@ -12580,13 +12583,14 @@ function w3Edge() {
   return (W3EDGE = out);
 }
 function map3dInit() {
+  if (window.__no3d) warmIso();
   if (W3 || window.__no3d || sprOff || typeof M3 === 'undefined' || !M3 || !M3.world || !M3.ready || !document.querySelector('#map svg.iso')) return;
   const wrap = $('#mapwrap'), cv = document.createElement('canvas');
   cv.id = 'map3d'; wrap.prepend(cv);
   const fx0 = FARM_X[0] - 44, fx1 = FARM_X[FARM_X.length - 1] + 44, fy0 = FARM_ROWS[0] - 56, fy1 = FARM_ROWS[1] + 24;
   let w = null;
   try { w = M3.world(cv, { vb: MAP_VB, hex: HEX, grow: hexGrow, plaza: PLAZA, ways: WAYS, farmRect: [[fx0, fy0], [fx1, fy0], [fx1, fy1], [fx0, fy1]], look: glook() }); } catch (e) { console.warn('[ilha 3D]', e); w = null; }
-  if (!w) { cv.remove(); window.__no3d = true; return; }
+  if (!w) { cv.remove(); window.__no3d = true; warmIso(); return; }
   W3 = w; ISO3D = true; w3Sig = ''; w3Box = '';
   wrap.style.background = `#e9c477 url(${goldHaze()}) center / cover no-repeat`;
   lastMap = ''; render();
