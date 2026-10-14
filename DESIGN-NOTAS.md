@@ -522,3 +522,12 @@ Clique/toque em tudo. Teclas: `1`–`9` abrem os painéis do dock (1 = Ilha), `E
 - Agora (`BOSS_TK`): +12% de vida por abelha ascendida e +8% por ataque comprado; mutação não conta. O ataque do chefe sobe 35% desse valor, como antes.
 - Ato II: 2.900 de vida e 78 de ataque (era 4.600/92). Ato III: 4.200 e 100 (era 7.000/112). Ato I segue 1.700/52.
 - Simulação (ht-tools/bsim2.js, sem relíquias): Ato II com 3 Lendárias Nv 22 vence 82–100%; Ato III com 3 Lendárias Nv 25 sem melhorias vence 5–43%, e com ascensão + mutação vence 86–100%. Ou seja: as melhorias agora ajudam no lugar de atrapalhar, e o Ato III pede um time melhorado.
+
+## v9.0 (14/10/2026): teto de nível por ato
+- Problema: dava para ter 3 Lendárias no Nv 25 no meio do Ato II (repetidas sobem 6 níveis, o upgrade mantém o nível e o mel sobra).
+- Teto de nível por ato (`ACT_LVCAP` = 15, 20, 25; `lvCap()`): vale para alimentar, repetidas da roleta, Poção de Treino e treino da rota. Fora do modo Atos, o teto segue 25. O botão mostra "Teto do ato: Nv X".
+- Upgrade Épica → Lendária: 12% de chance (era 15%) e custo de 9 giros (era 6).
+- Chefes refeitos para o teto (simulação sem relíquias, 60 lutas):
+  - Ato I (1700/52, igual): Lendárias Nv 15 vencem quase sempre; Épicas Nv 15 vencem ~40%.
+  - Ato II 2700/75 (era 2900/78): Lendárias Nv 20 vencem ~80%; com ascensão e mutação, 100%.
+  - Ato III 3800/92 (era 4200/100): Lendárias Nv 25 sem nada vencem ~25%; com ascensão e mutação, ~100%.
