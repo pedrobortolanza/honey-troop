@@ -9556,8 +9556,8 @@ const MODES = {
 // Partida em atos: cada ato termina com um chefe; vencer leva ao próximo ato com tudo o que foi construído
 const ACTS = [
   { n: 'Ato I', boss: 'General Vespa', disp: ['fogo', 'metal'], dur: 720, hp: 1700, atk: 52, reward: { gold: 4000, gems: 15, xp: 300 }, pts: 4000, hab: 4, farm: 6, lg: 3 },
-  { n: 'Ato II', boss: 'Vespa Rainha', disp: ['trevas', 'fogo'], dur: 720, hp: 2900, atk: 78, reward: { gold: 12000, gems: 20, xp: 600 }, pts: 8000, hab: 7, farm: 9, lg: 6 },
-  { n: 'Ato III', boss: 'Imperatriz do Ninho', disp: ['trevas', 'luz'], dur: 720, hp: 4200, atk: 100, pts: 12000, hab: 9, farm: 12, lg: 8 },
+  { n: 'Ato II', boss: 'Vespa Rainha', disp: ['trevas', 'fogo'], dur: 720, hp: 2700, atk: 75, reward: { gold: 12000, gems: 20, xp: 600 }, pts: 8000, hab: 7, farm: 9, lg: 6 },
+  { n: 'Ato III', boss: 'Imperatriz do Ninho', disp: ['trevas', 'luz'], dur: 720, hp: 3800, atk: 92, pts: 12000, hab: 9, farm: 12, lg: 8 },
 ];
 const BOSS_TK = { asc: 0.12, move: 0.08 };
 const actEndAt = i => ACTS.slice(0, i + 1).reduce((a, x) => a + x.dur, 0);
