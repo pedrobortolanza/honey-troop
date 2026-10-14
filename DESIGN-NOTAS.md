@@ -531,3 +531,20 @@ Clique/toque em tudo. Teclas: `1`–`9` abrem os painéis do dock (1 = Ilha), `E
   - Ato I (1700/52, igual): Lendárias Nv 15 vencem quase sempre; Épicas Nv 15 vencem ~40%.
   - Ato II 2700/75 (era 2900/78): Lendárias Nv 20 vencem ~80%; com ascensão e mutação, 100%.
   - Ato III 3800/92 (era 4200/100): Lendárias Nv 25 sem nada vencem ~25%; com ascensão e mutação, ~100%.
+
+## v9.1 (14/10/2026): desempenho no celular
+- Queixas: FPS caindo do nada depois de um tempo e muito uso de memória RAM.
+- Sprites das abelhas: no celular (toque) os quadros são 180x150 (eram 240x200). Cada tira de 8 quadros ocupa 56% da memória de antes; com as 87 tiras na tela, o pior caso caiu de ~127 MB para ~72 MB.
+- As construções em imagem (35, usadas só no mapa sem 3D) não são mais feitas no início nem guardadas em tela de desenho: só se a ilha 3D não abrir (`warmIso`). O carregamento também não espera por elas.
+- Ilha 3D:
+  - Resolução por degraus (`W3_DPR` 1.6 / 1.3 / 1.1 / 0.9 / 0.75). O celular começa em 1.3 (era 1.6).
+  - Se os quadros passam de 40 ms em média por 2 s (celular esquentando), desce um degrau. Com folga por 10 s, sobe de novo (no celular, no máximo até 1.3).
+  - Com uma aba aberta: 2 quadros/s (era 5). Pausado, com tela por cima, dica ou cutscene: nenhum.
+- Repintura:
+  - O pólen do ar se move com transform num elemento próprio (`.pollen`). Antes, o background-position animado repintava a ilha inteira a cada quadro.
+  - HUD e barra de cima sem backdrop-filter, que era refeito sobre a ilha 3D a cada quadro.
+  - O anel da dica pisca só a opacidade (antes animava uma sombra de 9999px).
+- Tela:
+  - Com aba aberta, o mapa SVG só é remontado a cada 2 s (`mapAt`).
+  - Transições: a aba fecha deslizando para baixo (`sheetSwap`, 170 ms) e o conteúdo entra suave ao trocar de aba.
+- Teste: ht-tools/perf.js (memória e nós ao longo da partida), perf2.js (custo de cada parte do render), perf3.js (celular, abrir e fechar abas).
