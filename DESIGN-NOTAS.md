@@ -515,3 +515,10 @@ Clique/toque em tudo. Teclas: `1`–`9` abrem os painéis do dock (1 = Ilha), `E
   - marDeMel: harpa lenta e calma; florada: arpejo subindo e sinos (a Primeira Flor); tropa: trompas e marcha (lembrança heroica); sombra/derrota/vazio: grave com tambor distante; zumbido/olhos/vespa: coração, cordas tremendo e o zumbido do enxame; ovo (Roleta): caixinha de música; ilha: tema da ilha cheio; titulo: acorde grande com trompas; ninho: mistério com sinos soltos; vitoria/amanhecer: fanfarra.
 - Abertura, sonho, atoVencido e ondaVencida tocam `lenda` e voltam para `ilha` no fim; vitória, derrota e semDefesa tocam `lenda` e o jogo passa para `placar`. As cenas de chefe continuam com `invasao`.
 - v8.8b: a `lenda` ficou mais fluida. Cada clima toca no seu próprio ganho e, na troca de quadro, os dois tocam juntos por ~3 s (o antigo some enquanto o novo entra). Uma cama de pad bem suave nunca para e liga um quadro ao outro. Notas mais longas (sinos no lugar de pluck seco), menos bateria e caixa mais leve.
+
+## v8.9 (14/10/2026): chefes dos Atos II e III rebalanceados
+
+- Problema: o chefe crescia +40% de vida por abelha ascendida, +20% por ataque comprado e +10% por mutação do Laboratório. Com 3 Lendárias Nv 25 ascendidas, com mutação e ataque, a Vespa Rainha ia de 4.600 para 14.260 de vida, e o time perdia em todas as 20 lutas simuladas (mesmo sem melhoria, 3 Lendárias Nv 25 perdiam).
+- Agora (`BOSS_TK`): +12% de vida por abelha ascendida e +8% por ataque comprado; mutação não conta. O ataque do chefe sobe 35% desse valor, como antes.
+- Ato II: 2.900 de vida e 78 de ataque (era 4.600/92). Ato III: 4.200 e 100 (era 7.000/112). Ato I segue 1.700/52.
+- Simulação (ht-tools/bsim2.js, sem relíquias): Ato II com 3 Lendárias Nv 22 vence 82–100%; Ato III com 3 Lendárias Nv 25 sem melhorias vence 5–43%, e com ascensão + mutação vence 86–100%. Ou seja: as melhorias agora ajudam no lugar de atrapalhar, e o Ato III pede um time melhorado.
