@@ -65,7 +65,7 @@ h2 { font-size: 1.25rem; }
 /* Barra superior */
 .top {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
-  background: rgba(32, 23, 15, .94); backdrop-filter: blur(6px);
+  background: rgba(32, 23, 15, .96);
   border-bottom: 1px solid var(--line);
 }
 .top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 10px; }
@@ -139,7 +139,7 @@ body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 @keyframes flagw { to { transform: skewY(8deg) scaleX(.85); } }
 .hud { position: absolute; top: 10px; left: 16px; right: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; pointer-events: none; z-index: 4; }
 .hud > * { pointer-events: auto; }
-.hud .box { background: rgba(32, 23, 15, .86); border: 1px solid var(--line); border-radius: 14px; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; backdrop-filter: blur(4px); }
+.hud .box { background: rgba(32, 23, 15, .9); border: 1px solid var(--line); border-radius: 14px; padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .hud .crop { padding: 3px 8px; }
 .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; justify-content: center; gap: 4px; overflow-x: auto;
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); background: rgba(32, 23, 15, .96); border-top: 1px solid var(--line); }
@@ -755,8 +755,10 @@ svg.gi { width: 1.2em; height: 1.2em; vertical-align: -.25em; display: inline-bl
 #tipLayer:has(.tip-spot.on)::before { display: none; }
 .tip-spot { position: fixed; border-radius: 16px; pointer-events: none; opacity: 0; transition: all .45s cubic-bezier(.2, .9, .3, 1);
   box-shadow: 0 0 0 9999px rgba(12, 5, 2, .5), 0 0 0 3px #ffd25c, 0 0 24px 6px rgba(255, 200, 80, .7); }
-.tip-spot.on { opacity: 1; animation: tipring 1.4s ease-in-out infinite; }
-@keyframes tipring { 50% { box-shadow: 0 0 0 9999px rgba(12, 5, 2, .5), 0 0 0 5px #fff2b0, 0 0 34px 12px rgba(255, 210, 90, .85); } }
+.tip-spot.on { opacity: 1; }
+.tip-spot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 5px #fff2b0, 0 0 34px 12px rgba(255, 210, 90, .85); opacity: 0; }
+.tip-spot.on::after { animation: tipring 1.4s ease-in-out infinite; }
+@keyframes tipring { 50% { opacity: 1; } }
 .tip-arrow { position: fixed; width: 0; height: 0; margin-left: -16px; opacity: 0; pointer-events: none; transition: left .45s, top .45s, opacity .3s; filter: drop-shadow(0 3px 0 #2a1608); }
 .tip-arrow.on { opacity: 1; }
 .tip-arrow.dn { border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid #ffd25c; animation: tipdn .8s ease-in-out infinite; }
@@ -1039,12 +1041,15 @@ body { background: #7a420c; }
 @keyframes lvlring { 0% { transform: translate(-50%,-50%) scale(.2); opacity: 0; } 20% { opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; } }
 @keyframes lvltext { 0% { transform: scale(.3); } 25% { transform: scale(1.2); } 40%, 80% { transform: scale(1); opacity: 1; } 100% { transform: scale(1) translateY(-30px); opacity: 0; } }
 .btn:active:not(:disabled) { transform: translateY(3px) scale(.97); }
-/* polén brilhando no ar da ilha */
-.mapwrap::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
-  background-image: radial-gradient(circle, rgba(255,246,200,.9) 0 2px, transparent 3px), radial-gradient(circle, rgba(255,226,140,.8) 0 1.5px, transparent 2.5px), radial-gradient(circle, rgba(255,255,230,.7) 0 2.5px, transparent 3.5px);
-  background-size: 230px 190px, 170px 260px, 310px 240px; background-position: 0 0, 60px 90px, 140px 30px; animation: pollen 18s linear infinite; opacity: .7; }
-@keyframes pollen { to { background-position: 40px -190px, 100px -170px, 180px -240px; } }
-@media (prefers-reduced-motion: reduce) { .mapwrap::after { animation: none; } .float { animation: rise .9s ease-out forwards; } }
+/* polén brilhando no ar da ilha. v9.1: a camada inteira sobe com transform (vai para a placa de vídeo);
+   antes o background-position animado repintava a ilha toda a cada quadro */
+.pollen { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.pollen::before { content: ""; position: absolute; left: 0; right: 0; top: -240px; bottom: 0;
+  background-image: radial-gradient(circle at 20% 15%, rgba(255,246,200,.9) 0 2px, transparent 3px), radial-gradient(circle at 70% 55%, rgba(255,226,140,.8) 0 1.5px, transparent 2.5px), radial-gradient(circle at 45% 85%, rgba(255,255,230,.7) 0 2.5px, transparent 3.5px);
+  background-size: 240px 240px, 240px 240px, 240px 240px; background-position: 0 0, 60px 0, 140px 0;
+  animation: pollen 18s linear infinite; opacity: .7; will-change: transform; }
+@keyframes pollen { from { transform: translate3d(0, 240px, 0); } to { transform: translate3d(0, 0, 0); } }
+@media (prefers-reduced-motion: reduce) { .pollen::before { animation: none; } .float { animation: rise .9s ease-out forwards; } }
 
 /* Batalha na Arena do Favo: palco com torcida de abelhas, bandeiras e chão de mel */
 .bstage { position: relative; border: 4px solid var(--ink); border-radius: 22px; overflow: hidden; margin: 6px 0 10px; padding: 8px 10px 14px; isolation: isolate;
@@ -1212,6 +1217,7 @@ body { background: #7a420c; }
 <header class="top" id="top"></header>
 <main class="stage" id="stage">
   <div class="mapwrap" id="mapwrap"><div id="map"></div></div>
+  <div class="pollen" aria-hidden="true"></div>
   <div class="hud" id="hud"></div>
   <div class="somctl" id="somctl"></div>
 </main>
