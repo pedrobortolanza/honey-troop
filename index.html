@@ -9570,6 +9570,9 @@ const bossName = () => isActs() ? curAct().boss : 'Vespa Rainha';
 const LEAGUES = ['Bronze', 'Prata', 'Ouro', 'Platina', 'Diamante', 'Mestre', 'Grão-Mestre', 'Campeões'];
 const LEAGUE_RARITY = [['C'], ['C', 'C', 'R'], ['R', 'C'], ['R', 'R', 'E'], ['E', 'R'], ['E', 'E', 'R'], ['E', 'L', 'E'], ['L', 'E']];
 const MAX_DLVL = 25;
+// v9.0: teto de nível por ato (15, 20, 25), para não chegar ao Ato II com o time no máximo
+const ACT_LVCAP = [15, 20, 25];
+const lvCap = () => (S && isActs()) ? ACT_LVCAP[Math.min(S.act || 0, 2)] : MAX_DLVL;
 // Nível 25 vale o antigo 15: cada nível cresce 14/24 do que crescia; oldLv converte níveis da escala antiga
 const LV_K = 14 / 24;
 const oldLv = l => clamp(1 + Math.round((Math.min(l, 15) - 1) / LV_K), 1, MAX_DLVL);
@@ -10195,7 +10198,7 @@ function buyDragon(e) {
 }
 function feed(id) {
   const d = S.dragons.find(x => x.id === id);
-  if (!d || d.lvl >= MAX_DLVL) return;
+  if (!d || d.lvl >= lvCap()) return;
   const c = feedCost(d.lvl);
   if (S.food < c) { toast('Néctar insuficiente', `Faltam ${fmt(c - S.food)} de néctar. Plante flores nos canteiros.`, 'bad'); return; }
   S.food -= c; S.stats.foodSpent += c; S.stats.feeds++;
@@ -10246,14 +10249,14 @@ const LUCK_ODDS = { C: 0.45, R: 0.33, E: 0.17, L: 0.05 }, LUCK_GEM = { C: 0, R: 
 function buyTreasure(k) {
   const t = TREASURES[k]; if (!t) return;
   if (k === 'ampulheta' && S.t >= S.freeAt) { toast('Já está pronto', 'Seu giro grátis já está esperando na roleta.', 'bad'); return; }
-  if (k === 'pocao' && !S.dragons.some(d => d.lvl < MAX_DLVL)) { toast('Todas no máximo', 'Nenhuma abelha pode subir de nível.', 'bad'); return; }
+  if (k === 'pocao' && !S.dragons.some(d => d.lvl < lvCap())) { toast('Todas no teto', `Nenhuma abelha pode passar do Nv ${lvCap()} neste ato.`, 'bad'); return; }
   if (!spendGems(t.gems)) return;
   S.stats.treasures = (S.stats.treasures || 0) + 1;
   sfx('comprar');
   if (k === 'fichas') { catchTicket(3); toast('🎯 +3 fichas', 'Use na Roleta do Enxame.'); }
   else if (k === 'trevo') { S.luck = (S.luck || 0) + 5; toast('🍀 Trevo da Sorte', `Sorte nos próximos ${S.luck} giros.`, 'ach'); }
   else if (k === 'ampulheta') { S.freeAt = S.t; toast('⏳ Giro grátis pronto', 'Corra para a roleta!'); }
-  else if (k === 'pocao') { const d = S.dragons.filter(x => x.lvl < MAX_DLVL).sort((a, b) => a.lvl - b.lvl)[0]; d.lvl = Math.min(MAX_DLVL, d.lvl + 3); S.stats.maxDragonLvl = Math.max(S.stats.maxDragonLvl, d.lvl); toast('🧪 Poção de Treino', `${d.name} agora está no Nv ${d.lvl}.`); }
+  else if (k === 'pocao') { const d = S.dragons.filter(x => x.lvl < lvCap()).sort((a, b) => a.lvl - b.lvl)[0]; d.lvl = Math.min(lvCap(), d.lvl + 3); S.stats.maxDragonLvl = Math.max(S.stats.maxDragonLvl, d.lvl); toast('🧪 Poção de Treino', `${d.name} agora está no Nv ${d.lvl}.`); }
   else if (k === 'estrela') { S.featUntil = 0; const f = swarmFeat(); toast('🌟 Novo destaque', f ? `${S.dex[f.key] ? f.name : 'Uma espécie misteriosa'} (${RARITY[f.rar].n})` : 'Libere mais tipos para ter destaque.'); }
   else if (k === 'amor') addCrystals(1, 'Cristal Raro da Loja.');
   else if (k === 'cesta') {
@@ -10327,8 +10330,8 @@ function grantBee(sp) {
   const have = S.dragons.filter(d => d.key === sp.key).sort((a, b) => a.lvl - b.lvl)[0];
   if (have) {
     st.swarmDups++;
-    if (have.lvl < MAX_DLVL) {
-      const up = Math.min(SWARM.dupLv[sp.rar], MAX_DLVL - have.lvl);
+    if (have.lvl < lvCap()) {
+      const up = Math.min(SWARM.dupLv[sp.rar], lvCap() - have.lvl);
       have.lvl += up; st.maxDragonLvl = Math.max(st.maxDragonLvl, have.lvl); addXp(4 * RARITY[sp.rar].rv);
       return { sp, dup: true, d: have, up };
     }
@@ -10634,7 +10637,7 @@ function takeNode(k) {
     const g = Math.round(base * 1.5), m = 2 + L; addGold(g); addGems(m); sfx('gemas');
     toast('💰 Tesouro', `+${fmt(g)} de mel e +${m} de geleia real. ` + advanceRoute(), 'ach');
   } else if (k === 'treino') {
-    const ups = teamDragons().filter(d => d.lvl < MAX_DLVL);
+    const ups = teamDragons().filter(d => d.lvl < lvCap());
     ups.forEach(d => { d.lvl++; S.stats.maxDragonLvl = Math.max(S.stats.maxDragonLvl, d.lvl); });
     sfx('nivelJogador');
     toast('⬆️ Treino', `${ups.length ? ups.map(d => d.name).join(', ') + ' subiram 1 nível.' : 'O time já está no nível máximo.'} ` + advanceRoute(), 'ach');
@@ -11919,7 +11922,7 @@ function eggSVG(sp, id, ready) {
 }
 // Upgrade (aba da Roleta): paga mel e tenta subir a abelha para a próxima raridade.
 // Deu certo: vira uma abelha da raridade nova, mantendo nível, mutação, visual e histórico. Deu errado: só perde o mel.
-const UPG = { C: { to: 'R', p: 0.5, k: 1 }, R: { to: 'E', p: 0.3, k: 2.5 }, E: { to: 'L', p: 0.15, k: 6 } }; // v8.1: bem mais barato (era 3, 8 e 20 giros)
+const UPG = { C: { to: 'R', p: 0.5, k: 1 }, R: { to: 'E', p: 0.3, k: 2.5 }, E: { to: 'L', p: 0.12, k: 9 } }; // v9.0: Épica → Lendária mais cara e mais difícil // v8.1: bem mais barato (era 3, 8 e 20 giros)
 const upgCost = d => Math.round(spinCost() * UPG[d.rar].k / 5) * 5;
 function swTabs() {
   return `<div class="stabs"><button class="stab" aria-pressed="${S.swTab !== 'up'}" data-a="swTab" data-k="roleta">🎯 Roleta</button><button class="stab" aria-pressed="${S.swTab === 'up'}" data-a="swTab" data-k="up">⬆️ Upgrade</button></div>`;
@@ -12671,7 +12674,7 @@ function viewHud() {
   return crisisBox() + `<div class="box run-box"><span class="hud-lbl" title="${se.d}">${se.i} ${se.n}</span><span class="hud-lbl" title="${rv.d}">${rv.i} ${S.raid ? '<b>Invasão agora!</b>' : nextRaid !== null ? `Invasão em ${fmtTime(Math.max(0, nextRaid))}` : 'Sem mais invasões'}</span></div><div class="box"><button class="btn small go" data-a="tab" data-k="jardim">🌱 Jardim${ready ? ` <span class="badge">${ready}</span>` : ''}</button>${S.gardener ? '<span class="hint hud-lbl">👩‍🌾 Jardineira trabalhando</span>' : ''}</div>${acts ? `<div class="box">${acts}</div>` : ''}`;
 }
 function dragonCard(d) {
-  const maxed = d.lvl >= MAX_DLVL;
+  const maxed = d.lvl >= lvCap();
   const fc = feedCost(d.lvl);
   const vr = vetRank(d);
   return `<div class="dcard r-${d.rar}${d.asc ? ' asc' : ''}"><button class="dic-btn" data-a="ficha" data-id="${d.id}" title="Ver a ficha de ${d.name}" aria-label="Ver a ficha de ${d.name}">${dIcon(d.els, d.rar, 'm', '', d.id, d.skin)}<span class="ficha-tag">Ficha</span></button>
@@ -12680,7 +12683,7 @@ function dragonCard(d) {
       <span class="meta"><span class="rar-${d.rar}">${RARITY[d.rar].f}</span> · ${elTags(d.els)}</span>
       <span class="meta num">🪙 ${gpsOf(d).toFixed(1).replace('.', ',')}/s${isNative(d) ? ' 🌻' : ''} · ❤️ ${myHp(d)} · 🗡️ ${myAtk(d)}</span>${d.move && ATTACKS[d.move] ? `<span class="meta">${ATTACKS[d.move].i} ${ATTACKS[d.move].n}</span>` : ''}${d.mut ? `<span class="meta mut-tag" title="${MUTS[d.mut].d}">🧬 ${MUTS[d.mut].n} · ${MUTS[d.mut].d}</span>` : ''}${seasonOf(d) > 1 ? `<span class="meta">${SEASONS[S.season].i} Forte no ${SEASONS[S.season].n}: +20% vida e ataque</span>` : ''}
       <div class="row">
-        <button class="btn small" data-a="feed" data-id="${d.id}" ${maxed ? 'disabled' : ''}>${maxed ? 'Nível máximo' : `Alimentar ${costTag(fc, 'f')}`}</button>
+        <button class="btn small" data-a="feed" data-id="${d.id}" ${maxed ? 'disabled' : ''}>${maxed ? (lvCap() < MAX_DLVL ? `Teto do ato: Nv ${lvCap()}` : 'Nível máximo') : `Alimentar ${costTag(fc, 'f')}`}</button>
         <button class="btn small" data-a="sell" data-id="${d.id}">${d._confirm ? 'Confirmar venda?' : `Vender ${costTag(sellValue(d))}`}</button>
       </div>
     </div></div>`;
