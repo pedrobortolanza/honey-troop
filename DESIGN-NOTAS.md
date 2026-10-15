@@ -548,3 +548,4 @@ Clique/toque em tudo. Teclas: `1`–`9` abrem os painéis do dock (1 = Ilha), `E
   - Com aba aberta, o mapa SVG só é remontado a cada 2 s (`mapAt`).
   - Transições: a aba fecha deslizando para baixo (`sheetSwap`, 170 ms) e o conteúdo entra suave ao trocar de aba.
 - Teste: ht-tools/perf.js (memória e nós ao longo da partida), perf2.js (custo de cada parte do render), perf3.js (celular, abrir e fechar abas).
+- v9.1b: a ilha 3D ficava vazia durante as dicas do começo (a pausa impedia o primeiro quadro). Agora o primeiro quadro, e o de depois de mudar o tamanho, sai sempre (`w3Drawn`), e com dicas na tela a ilha roda a 10 quadros/s. Teste: ht-tools/tips3d.js.
